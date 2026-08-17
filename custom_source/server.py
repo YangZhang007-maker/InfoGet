@@ -19,10 +19,17 @@ except (ImportError, ValueError):
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from custom_source import custom_search, match_platform, get_platform_name
 
+# 推荐博主模块
+try:
+    from ..recommend_source.router import router as recommend_router
+except (ImportError, ValueError):
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from recommend_source.router import router as recommend_router
+
 app = FastAPI(
     title="每日热榜增强API",
-    description="自定义信息源搜索 + 智能热点提取",
-    version="1.0.0",
+    description="自定义信息源搜索 + 智能热点提取 + 博主推荐",
+    version="1.1.0",
 )
 
 # CORS 开放，允许前端调用
@@ -33,6 +40,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 挂载推荐博主路由
+app.include_router(recommend_router)
 
 
 # ============================================

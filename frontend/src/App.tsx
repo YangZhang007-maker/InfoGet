@@ -4,12 +4,13 @@ import HotList from "./components/HotList";
 import SearchBar from "./components/SearchBar";
 import Top10 from "./components/Top10";
 import CustomSearch from "./components/CustomSearch";
+import RecommendSource from "./components/RecommendSource";
 import type { HotItem } from "./types";
 import { fetchHotList } from "./services/api";
 import { PLATFORM_NAME_MAP } from "./services/data";
 import "./App.css";
 
-type ViewMode = "hotlist" | "search" | "top10" | "custom";
+type ViewMode = "hotlist" | "search" | "top10" | "custom" | "recommend";
 
 function App() {
   const [selectedPlatform, setSelectedPlatform] = useState("");
@@ -70,6 +71,12 @@ function App() {
           >
             🎯 自定义源
           </button>
+          <button
+            className={`nav-btn ${viewMode === "recommend" ? "active" : ""}`}
+            onClick={() => setViewMode("recommend")}
+          >
+            🤝 推荐博主
+          </button>
         </nav>
         <div className="header-status">
           <span className="api-badge">API: localhost:6688</span>
@@ -111,6 +118,12 @@ function App() {
         {viewMode === "custom" && (
           <main className="main-content full-width">
             <CustomSearch />
+          </main>
+        )}
+
+        {viewMode === "recommend" && (
+          <main className="main-content full-width">
+            <RecommendSource />
           </main>
         )}
       </div>
