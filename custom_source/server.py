@@ -12,10 +12,12 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-# 确保能导入同目录的模块
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-from custom_source import custom_search, match_platform, get_platform_name
+# 支持包导入和脚本运行两种方式
+try:
+    from .custom_source import custom_search, match_platform, get_platform_name
+except (ImportError, ValueError):
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from custom_source import custom_search, match_platform, get_platform_name
 
 app = FastAPI(
     title="每日热榜增强API",

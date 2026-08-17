@@ -57,7 +57,7 @@ fi
 export DAILY_HOT_DATA_DIR="$(pwd)/data"
 export DAILY_HOT_API_URL="http://localhost:6688"
 start_service "backend" 5001 "backend.pid" \
-    "$PYTHON" server.py
+    "$PYTHON" custom_source/server.py
 
 # 3. React 前端
 echo "[3/3] React 前端"

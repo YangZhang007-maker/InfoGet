@@ -47,14 +47,14 @@ $PYTHON -c "import aiohttp, requests" 2>/dev/null || {
 echo "✅ 依赖已就绪"
 echo ""
 
-# 检查后端服务
+# 检查后端服务（用 /weibo 端点检测，根路径无静态页会返回404）
 echo "🔍 检查后端服务 ${DAILY_HOT_API_URL}..."
 $PYTHON -c "
 import aiohttp, asyncio
 async def check():
     try:
         async with aiohttp.ClientSession() as s:
-            async with s.get('${DAILY_HOT_API_URL}', timeout=aiohttp.ClientTimeout(total=3)) as r:
+            async with s.get('${DAILY_HOT_API_URL}/weibo', timeout=aiohttp.ClientTimeout(total=3)) as r:
                 return r.status == 200
     except:
         return False

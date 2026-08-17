@@ -35,4 +35,4 @@ echo "   📡 API: http://localhost:${ENHANCER_PORT}"
 echo "   📋 文档: http://localhost:${ENHANCER_PORT}/docs"
 echo ""
 
-$PYTHON server.py
+$PYTHON custom_source/server.py

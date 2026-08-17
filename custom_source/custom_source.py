@@ -9,6 +9,7 @@
 
 import os
 import re
+import sys
 import json
 import asyncio
 from typing import Dict, List, Optional, Any
@@ -18,11 +19,15 @@ from dataclasses import dataclass, field
 import requests
 from bs4 import BeautifulSoup
 
-# 支持两种导入方式
+# 支持三种导入方式：
+# 1. 包导入: from custom_source.custom_source import ...（from ..api_client 生效）
+# 2. 脚本运行: python3 custom_source/custom_source.py（sys.path 兜底生效）
+# 3. 从项目根目录: from custom_source import ...（sys.path 兜底生效）
 try:
-    from .api_client import api_client, HOT_SOURCES
-    from .config import config
-except ImportError:
+    from ..api_client import api_client, HOT_SOURCES
+    from ..config import config
+except (ImportError, ValueError):
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from api_client import api_client, HOT_SOURCES
     from config import config
 
@@ -31,9 +36,18 @@ except ImportError:
 # ============================================
 # API Key 从环境变量或项目根目录 .env 文件读取（不硬编码，避免泄露）
 def _load_env_file():
-    """从项目根目录 .env 加载环境变量（不覆盖已有值）"""
-    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
-    if os.path.exists(env_path):
+    """从项目根目录 .env 加载环境变量（不覆盖已有值）
+
+    查找顺序：项目根目录 .env → 本文件目录 .env
+    """
+    this_dir = os.path.dirname(os.path.abspath(__file__))
+    root_dir = os.path.dirname(this_dir)  # custom_source/ 的上一级 = 项目根目录
+    candidate_paths = [
+        os.path.join(root_dir, ".env"),    # 项目根目录
+        os.path.join(this_dir, ".env"),    # 本文件目录（兜底）
+    ]
+    env_path = next((p for p in candidate_paths if os.path.exists(p)), None)
+    if env_path:
         try:
             with open(env_path, "r", encoding="utf-8") as f:
                 for line in f:
