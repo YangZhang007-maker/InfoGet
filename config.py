@@ -4,9 +4,6 @@
 """
 
 import os
-from typing import Optional
-
-
 class Config:
     """配置管理类"""
 
@@ -29,10 +26,10 @@ class Config:
         # 启用调试模式
         self.debug: bool = os.getenv("DAILY_HOT_DEBUG", "false").lower() == "true"
 
-        # 数据存储路径
+        # 数据存储路径（默认使用项目目录下的 data/）
         self.data_dir: str = os.getenv(
             "DAILY_HOT_DATA_DIR",
-            "/root/.openclaw/workspace/skills/daily-hot-news/data"
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
         )
 
         # 是否自动保存每日热榜

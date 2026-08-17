@@ -1,53 +1,71 @@
-# Dependencies
+# ============================================
+# 🔥 每日热榜 - .gitignore
+# ============================================
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# ---------- Node.js ----------
 node_modules/
 .pnpm-store/
+npm-debug.log*
+yarn-error.log*
 
-# Build outputs
+# ---------- 构建产物 ----------
 dist/
 build/
+*.tsbuildinfo
 
-# Environment variables
+# ---------- 环境变量（含密钥，绝不提交） ----------
 .env
 .env.local
 .env.*.local
+!.env.example
 
-# IDE
+# ---------- IDE / 编辑器 ----------
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# OS
+# ---------- OS ----------
 .DS_Store
 Thumbs.db
 
-# Logs
+# ---------- 运行时 ----------
+.pids/
+.logs/
 logs/
 *.log
-npm-debug.log*
 
-# Testing
-coverage/
-.nyc_output/
-
-# Cache
-.cache/
-.__pycache__/
-*.py[cod]
-*$py.class
-
-# Data files (user data)
+# ---------- 用户数据（热榜历史记录） ----------
 data/
-*.json
 
-# Temporary files
+# ---------- 个性化配置（用户本地偏好） ----------
+personalized_config.json
+
+# ---------- 缓存 / 临时 ----------
+.cache/
 tmp/
 temp/
 *.tmp
 
-# OpenClaw specific
+# ---------- OpenClaw 特定 ----------
 .clawdhub/
 
-# Personal milestone (local only)
+# 个人里程碑（仅本地）
 MILESTONE.md
+
+# ---------- 测试 ----------
+coverage/
+.nyc_output/
+
+# PID 文件（运行时）
+*.pid

@@ -1,0 +1,7 @@
+# 每日热榜 - 后端服务依赖
+fastapi>=0.100.0
+uvicorn>=0.23.0
+beautifulsoup4>=4.12.0
+requests>=2.28.0
+pydantic>=2.0.0
+duckduckgo_search>=7.0.0

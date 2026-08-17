@@ -109,28 +109,39 @@
 
 ## 🚀 快速开始
 
-### 1. 部署后端服务
+### ⭐ 单项目一键运行（推荐）
+
+本项目已内置 DailyHotApi 热榜服务（`hot-api/` 子目录），一条命令启动全部三个服务：
 
 ```bash
-cd daily-hot-api
-./deploy.sh
+./start-all.sh      # 启动 热榜API(:6688) + 后端(:5001) + 前端(:5173)
+./stop-all.sh       # 停止全部服务
 ```
 
-### 2. 安装依赖
+浏览器打开 **http://localhost:5173** 即可使用完整功能。
+
+> 首次运行会自动执行 `npm install`（hot-api 和 frontend），需保证网络可用。
+> 如 npm 安装慢，可先执行 `npm config set registry https://registry.npmmirror.com`
+
+### 分服务手动运行
 
 ```bash
-pip install -r requirements.txt
+# 1. 热榜 API（Node.js, 端口 6688）
+cd hot-api && NODE_ENV=development npx tsx watch --no-cache src/index.ts
+
+# 2. 增强后端（Python FastAPI, 端口 5001）
+export DAILY_HOT_DATA_DIR=$(pwd)/data
+python3 server.py
+
+# 3. React 前端（端口 5173）
+cd frontend && npx vite --host 0.0.0.0 --port 5173
 ```
 
-### 3. 配置环境变量
+### 命令行模式
 
 ```bash
-export DAILY_HOT_API_URL=http://localhost:6688
-```
-
-### 4. 运行
-
-```bash
+./run.sh weibo          # 查询微博热搜
+./run.sh --list         # 列出所有 54 个平台
 python3 daily_hot_news.py --query "微博热搜"
 ```
 
