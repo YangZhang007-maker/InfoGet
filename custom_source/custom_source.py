@@ -4,7 +4,7 @@
 功能：
 - 域名匹配：判断用户输入的网站是否在现有 54 平台 API 覆盖范围内
 - 已知平台：通过现有 API 查询 + 按兴趣方向关键词过滤
-- 未知平台：抓取网页 HTML → Deepseek API 提取结构化热点信息
+- 未知平台：抓取网页 HTML → Codex Responses API 提取结构化热点信息
 """
 
 import os
@@ -26,47 +26,12 @@ from bs4 import BeautifulSoup
 try:
     from ..api_client import api_client, HOT_SOURCES
     from ..config import config
+    from ..codex_llm import call_codex_responses
 except (ImportError, ValueError):
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from api_client import api_client, HOT_SOURCES
     from config import config
-
-# ============================================
-# Deepseek API 配置
-# ============================================
-# API Key 从环境变量或项目根目录 .env 文件读取（不硬编码，避免泄露）
-def _load_env_file():
-    """从项目根目录 .env 加载环境变量（不覆盖已有值）
-
-    查找顺序：项目根目录 .env → 本文件目录 .env
-    """
-    this_dir = os.path.dirname(os.path.abspath(__file__))
-    root_dir = os.path.dirname(this_dir)  # custom_source/ 的上一级 = 项目根目录
-    candidate_paths = [
-        os.path.join(root_dir, ".env"),    # 项目根目录
-        os.path.join(this_dir, ".env"),    # 本文件目录（兜底）
-    ]
-    env_path = next((p for p in candidate_paths if os.path.exists(p)), None)
-    if env_path:
-        try:
-            with open(env_path, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if line and not line.startswith("#") and "=" in line:
-                        key, _, value = line.partition("=")
-                        key = key.strip()
-                        value = value.strip().strip('"').strip("'")
-                        if key and key not in os.environ:
-                            os.environ[key] = value
-        except Exception:
-            pass
-
-
-_load_env_file()
-
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
-DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
-DEEPSEEK_MODEL = "deepseek-chat"
+    from codex_llm import call_codex_responses
 
 
 @dataclass
@@ -280,7 +245,7 @@ async def search_known_platform_with_llm(
     max_items: int = 20
 ) -> List[Dict[str, Any]]:
     """
-    已知平台 API 无关键词匹配结果时，用 Deepseek 对热榜数据做语义匹配
+    已知平台 API 无关键词匹配结果时，用 Codex 模型对热榜数据做语义匹配
 
     不爬网站，而是把 API 返回的热榜标题/描述发给 LLM 做语义分析，
     找出与用户兴趣方向真正相关的内容。
@@ -356,27 +321,12 @@ async def search_known_platform_with_llm(
             f"{items_text}"
         )
 
-        import requests as req
-        resp = req.post(
-            DEEPSEEK_API_URL,
-            headers={
-                "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": DEEPSEEK_MODEL,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                "temperature": 0.3,
-                "max_tokens": 2000,
-            },
+        content = call_codex_responses(
+            system_prompt,
+            user_prompt,
+            max_output_tokens=2000,
             timeout=60,
         )
-        resp.raise_for_status()
-        result = resp.json()
-        content = result.get("choices", [{}])[0].get("message", {}).get("content", "[]")
 
         # 清理 markdown 代码块
         content = content.strip()
@@ -431,7 +381,7 @@ async def search_known_platform_with_llm(
 
 
 # ============================================
-# 未知平台搜索（Deepseek API）
+# 未知平台搜索（Codex Responses API）
 # ============================================
 
 def fetch_webpage(url: str, timeout: int = 15) -> Optional[str]:
@@ -993,7 +943,7 @@ def search_bilibili_popular_fallback(
 ) -> Optional[List[Dict[str, Any]]]:
     """
     B站最终兜底：从热门视频中筛选（当搜索 API 也找不到内容时）
-    用 B站 popular API + Deepseek 语义匹配
+    用 B站 popular API + Codex 模型语义匹配
     """
     try:
         session = requests.Session()
@@ -1024,7 +974,7 @@ def search_bilibili_popular_fallback(
         if not items:
             return None
 
-        # 构建文本给 Deepseek
+        # 构建文本给 Codex 模型
         items_text = ""
         for idx, item in enumerate(items[:50]):
             title = item.get("title", "")
@@ -1046,25 +996,12 @@ def search_bilibili_popular_fallback(
             f"请在以下B站热门视频中，找出与「{interest}」话题最相关的视频：\n\n{items_text}"
         )
 
-        llm_resp = requests.post(
-            DEEPSEEK_API_URL,
-            headers={
-                "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": DEEPSEEK_MODEL,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                "temperature": 0.3,
-                "max_tokens": 1000,
-            },
+        content = call_codex_responses(
+            system_prompt,
+            user_prompt,
+            max_output_tokens=1000,
             timeout=30,
         )
-        llm_resp.raise_for_status()
-        content = llm_resp.json().get("choices", [{}])[0].get("message", {}).get("content", "[]")
 
         # Parse
         content = content.strip()
@@ -1116,7 +1053,7 @@ def search_platform_section_web(
     interest: str,
 ) -> Optional[List[Dict[str, Any]]]:
     """
-    抓取平台搜索页面 HTML，用 Deepseek 提取板块内容
+    抓取平台搜索页面 HTML，用 Codex 模型提取板块内容
 
     Args:
         platform_id: 平台 ID
@@ -1147,7 +1084,7 @@ def search_platform_section_web(
 
     source_name = get_platform_name(platform_id)
 
-    # 用 Deepseek 提取
+    # 用 Codex 模型提取
     system_prompt = (
         "你是一个专业的信息提取助手。"
         "从网页内容中提取与指定方向相关的热门内容。"
@@ -1163,26 +1100,12 @@ def search_platform_section_web(
     )
 
     try:
-        resp = requests.post(
-            DEEPSEEK_API_URL,
-            headers={
-                "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": DEEPSEEK_MODEL,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                "temperature": 0.3,
-                "max_tokens": 2000,
-            },
+        content = call_codex_responses(
+            system_prompt,
+            user_prompt,
+            max_output_tokens=2000,
             timeout=60,
         )
-        resp.raise_for_status()
-        result = resp.json()
-        content = result.get("choices", [{}])[0].get("message", {}).get("content", "[]")
 
         # 清理 markdown
         content = content.strip()
@@ -1287,13 +1210,13 @@ def search_platform_section(
     return []
 
 
-def call_deepseek_for_extraction(
+def call_codex_for_extraction(
     text: str,
     interests: List[str],
     source_url: str
 ) -> List[Dict[str, Any]]:
     """
-    调用 Deepseek API 从文本中提取热点信息
+    调用 Codex Responses API 从文本中提取热点信息
 
     Args:
         text: 网页文本内容
@@ -1322,28 +1245,12 @@ def call_deepseek_for_extraction(
     )
 
     try:
-        resp = requests.post(
-            DEEPSEEK_API_URL,
-            headers={
-                "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": DEEPSEEK_MODEL,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                "temperature": 0.3,
-                "max_tokens": 2000,
-            },
+        content = call_codex_responses(
+            system_prompt,
+            user_prompt,
+            max_output_tokens=2000,
             timeout=60,
         )
-        resp.raise_for_status()
-        result = resp.json()
-
-        # 提取回复内容
-        content = result.get("choices", [{}])[0].get("message", {}).get("content", "[]")
 
         # 清理可能的 markdown 代码块
         content = content.strip()
@@ -1379,10 +1286,10 @@ def call_deepseek_for_extraction(
         return items
 
     except requests.exceptions.Timeout:
-        print("[CustomSource] Deepseek API timeout")
+        print("[CustomSource] Codex API timeout")
         return []
     except requests.exceptions.RequestException as e:
-        print(f"[CustomSource] Deepseek API error: {e}")
+        print(f"[CustomSource] Codex API error: {e}")
         return []
     except Exception as e:
         print(f"[CustomSource] Unexpected error: {e}")
@@ -1413,7 +1320,7 @@ def extract_links_from_html(html: str, base_url: str) -> List[Dict[str, str]]:
 def attach_urls_to_items(
     items: List[Dict[str, Any]], links: List[Dict[str, str]]
 ) -> List[Dict[str, Any]]:
-    """将 HTML 链接匹配到 Deepseek 提取的条目"""
+    """将 HTML 链接匹配到 Codex 模型提取的条目"""
     if not links:
         return items
 
@@ -1452,7 +1359,7 @@ def search_unknown_source(
     interests: List[str]
 ) -> List[Dict[str, Any]]:
     """
-    搜索未知平台：抓取网页 + Deepseek 提取
+    搜索未知平台：抓取网页 + Codex 模型提取
 
     Args:
         url: 网页 URL
@@ -1485,9 +1392,9 @@ def search_unknown_source(
             "match_type": "error",
         }]
 
-    # 步骤3: 调用 Deepseek API
-    print(f"[CustomSource] Calling Deepseek API for {url}...")
-    items = call_deepseek_for_extraction(text, interests, url)
+    # 步骤3: 调用 Codex Responses API
+    print(f"[CustomSource] Calling Codex API for {url}...")
+    items = call_codex_for_extraction(text, interests, url)
 
     # 步骤4: 从 HTML 中提取链接并匹配到条目
     links = extract_links_from_html(html, url)
@@ -1674,29 +1581,20 @@ def search_bilibili_final_fallback(
         items_text += f"    播放: {item.get('hot', '?')}\n\n"
 
     try:
-        resp = requests.post(
-            DEEPSEEK_API_URL,
-            headers={"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type": "application/json"},
-            json={
-                "model": DEEPSEEK_MODEL,
-                "messages": [
-                    {"role": "system", "content": (
-                        "你是内容筛选助手。从搜索结果中选出与用户搜索意图最相关的视频。"
-                        "只选真正相关的，不相关的坚决排除。"
-                        "返回 JSON 数组 [{index, title, reason}]，按相关度降序，最多10条。"
-                        "index 对应搜索结果中的序号。没有相关的返回 []。"
-                    )},
-                    {"role": "user", "content": (
-                        f"用户搜索: {interest}\n\n"
-                        f"请选出与「{interest}」最相关的视频:\n\n{items_text}"
-                    )},
-                ],
-                "temperature": 0.3, "max_tokens": 1500,
-            },
+        content = call_codex_responses(
+            (
+                "你是内容筛选助手。从搜索结果中选出与用户搜索意图最相关的视频。"
+                "只选真正相关的，不相关的坚决排除。"
+                "返回 JSON 数组 [{index, title, reason}]，按相关度降序，最多10条。"
+                "index 对应搜索结果中的序号。没有相关的返回 []。"
+            ),
+            (
+                f"用户搜索: {interest}\n\n"
+                f"请选出与「{interest}」最相关的视频:\n\n{items_text}"
+            ),
+            max_output_tokens=1500,
             timeout=60,
         )
-        resp.raise_for_status()
-        content = resp.json().get("choices", [{}])[0].get("message", {}).get("content", "[]")
     except Exception as e:
         print(f"[FinalFallback] LLM call failed: {e}")
         # LLM 失败 → 直接返回去重后的原始结果
@@ -1817,45 +1715,36 @@ def search_unknown_with_fallback(
                 if not text or len(text) < 200:
                     continue
 
-                # Deepseek 从搜索结果页提取条目
-                resp = requests.post(
-                    DEEPSEEK_API_URL,
-                    headers={"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type": "application/json"},
-                    json={
-                        "model": DEEPSEEK_MODEL,
-                        "messages": [
-                            {"role": "system", "content": "从搜索结果页提取条目。返回 JSON [{title, url, summary}]，最多5条。每条的url必须是完整绝对URL。"},
-                            {"role": "user", "content": f"搜索: {kw}\n从以下搜索页提取结果:\n\n{text[:3000]}"},
-                        ],
-                        "temperature": 0.3, "max_tokens": 1500,
-                    },
+                # Codex 模型从搜索结果页提取条目
+                content = call_codex_responses(
+                    "从搜索结果页提取条目。返回 JSON [{title, url, summary}]，最多5条。每条的url必须是完整绝对URL。",
+                    f"搜索: {kw}\n从以下搜索页提取结果:\n\n{text[:3000]}",
+                    max_output_tokens=1500,
                     timeout=30,
                 )
-                if resp.status_code == 200:
-                    content = resp.json().get("choices", [{}])[0].get("message", {}).get("content", "[]")
-                    content = content.strip()
-                    for prefix in ["```json", "```"]:
-                        if content.startswith(prefix):
-                            content = content[len(prefix):]
-                    if content.endswith("```"):
-                        content = content[:-3]
-                    try:
-                        items = json.loads(content)
-                        # 从搜索页 HTML 提取链接并匹配到条目
-                        links = extract_links_from_html(html, search_url)
-                        items = attach_urls_to_items(items, links)
-                        for item in items:
-                            item_url = item.get("url", "")
-                            if item_url not in seen_urls:
-                                seen_urls.add(item_url)
-                                search_results.append({
-                                    "title": item.get("title", ""),
-                                    "url": item_url,
-                                    "summary": item.get("summary", ""),
-                                    "source_keyword": kw,
-                                })
-                    except json.JSONDecodeError:
-                        pass
+                content = content.strip()
+                for prefix in ["```json", "```"]:
+                    if content.startswith(prefix):
+                        content = content[len(prefix):]
+                if content.endswith("```"):
+                    content = content[:-3]
+                try:
+                    items = json.loads(content)
+                    # 从搜索页 HTML 提取链接并匹配到条目
+                    links = extract_links_from_html(html, search_url)
+                    items = attach_urls_to_items(items, links)
+                    for item in items:
+                        item_url = item.get("url", "")
+                        if item_url not in seen_urls:
+                            seen_urls.add(item_url)
+                            search_results.append({
+                                "title": item.get("title", ""),
+                                "url": item_url,
+                                "summary": item.get("summary", ""),
+                                "source_keyword": kw,
+                            })
+                except json.JSONDecodeError:
+                    pass
 
                 if search_results:
                     print(f"[UnknownSearch] 网站搜索 '{search_url[:60]}' → {len(search_results)} items")
@@ -1877,27 +1766,18 @@ def search_unknown_with_fallback(
         items_text += f"    {r['url']}\n\n"
 
     try:
-        resp = requests.post(
-            DEEPSEEK_API_URL,
-            headers={"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type": "application/json"},
-            json={
-                "model": DEEPSEEK_MODEL,
-                "messages": [
-                    {"role": "system", "content": (
-                        "从搜索结果中选出与用户搜索意图最相关的页面。"
-                        "返回 JSON [{index, title, reason}]，最多10条。index对应搜索结果的序号。"
-                    )},
-                    {"role": "user", "content": (
-                        f"用户搜索: {interests[0]}\n目标网站: {url}\n\n"
-                        f"请选出最相关的:\n\n{items_text}"
-                    )},
-                ],
-                "temperature": 0.3, "max_tokens": 1500,
-            },
+        content = call_codex_responses(
+            (
+                "从搜索结果中选出与用户搜索意图最相关的页面。"
+                "返回 JSON [{index, title, reason}]，最多10条。index对应搜索结果的序号。"
+            ),
+            (
+                f"用户搜索: {interests[0]}\n目标网站: {url}\n\n"
+                f"请选出最相关的:\n\n{items_text}"
+            ),
+            max_output_tokens=1500,
             timeout=60,
         )
-        resp.raise_for_status()
-        content = resp.json().get("choices", [{}])[0].get("message", {}).get("content", "[]")
         content = content.strip()
         for prefix in ["```json", "```"]:
             if content.startswith(prefix):

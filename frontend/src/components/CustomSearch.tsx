@@ -183,9 +183,6 @@ export default function CustomSearch() {
       )}
 
       {results.map((source, idx) => {
-        const hasFallbackItems = source.items.some(
-          (i) => i.match_type === "llm_fallback" || i.match_type === "section_search_api" || i.match_type === "section_search_web"
-        );
         const allFallback = source.items.length > 0 && source.items.every(
           (i) => i.match_type === "llm_fallback" || i.match_type === "llm_extracted" || i.match_type === "section_search_api" || i.match_type === "section_search_web"
         );

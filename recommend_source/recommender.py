@@ -2,7 +2,7 @@
 推荐博主核心逻辑
 
 数据流：
-  用户输入 → Deepseek 提取关键词+推荐平台 → B站搜索API收集视频 →
+  用户输入 → Codex 模型提取关键词+推荐平台 → B站搜索API收集视频 →
   统计UP主频次 → B站用户卡API获取粉丝/简介 → 按粉丝数排序 → 返回
 """
 
@@ -15,22 +15,19 @@ from urllib.parse import quote
 
 # 支持包导入和脚本运行
 try:
-    from ..custom_source.custom_source import (
-        DEEPSEEK_API_URL, DEEPSEEK_API_KEY, DEEPSEEK_MODEL,
-    )
+    from ..codex_llm import call_codex_responses
 except (ImportError, ValueError):
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "custom_source"))
-    from custom_source import DEEPSEEK_API_URL, DEEPSEEK_API_KEY, DEEPSEEK_MODEL
+    from codex_llm import call_codex_responses
 
 
 # ============================================
-# Deepseek：提取关键词 + 推荐平台
+# Codex：提取关键词 + 推荐平台
 # ============================================
 
 def extract_keywords_and_platforms(query: str) -> Dict[str, Any]:
     """
-    用 Deepseek 从用户输入中提取：
+    用 Codex 模型从用户输入中提取：
     1. 领域搜索关键词（用于B站搜索）
     2. 推荐的其他平台及理由（不编博主，只推荐平台）
 
@@ -53,22 +50,12 @@ def extract_keywords_and_platforms(query: str) -> Dict[str, Any]:
     )
 
     try:
-        resp = requests.post(
-            DEEPSEEK_API_URL,
-            headers={"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type": "application/json"},
-            json={
-                "model": DEEPSEEK_MODEL,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"用户关心的内容：{query}"},
-                ],
-                "temperature": 0.4,
-                "max_tokens": 800,
-            },
+        content = call_codex_responses(
+            system_prompt,
+            f"用户关心的内容：{query}",
+            max_output_tokens=800,
             timeout=45,
         )
-        resp.raise_for_status()
-        content = resp.json().get("choices", [{}])[0].get("message", {}).get("content", "{}")
 
         # 清理 markdown
         content = content.strip()

@@ -2,7 +2,7 @@
 自定义源增强模块包
 
 包含：
-- custom_source.py: 自定义信息源搜索核心逻辑（域名匹配、多层降级搜索、Deepseek 集成）
+- custom_source.py: 自定义信息源搜索核心逻辑（域名匹配、多层降级搜索、Codex 集成）
 - server.py: FastAPI 后端服务（端口 5001），供前端 CustomSearch 调用
 
 使用方式：

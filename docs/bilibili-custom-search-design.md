@@ -34,7 +34,7 @@
                                                           │
                                                           ▼
                                                   ┌──────────────────┐
-                                                  │  Deepseek API     │
+                                                  │  Codex API        │
                                                   │  (LLM 语义分析)    │
                                                   └──────────────────┘
 ```
@@ -76,7 +76,7 @@
 
 **技术方法**：
 - Layer 1 无结果时触发
-- 将热榜 TOP 50 的标题 + 描述发送给 Deepseek Chat API
+- 将热榜 TOP 50 的标题 + 描述发送给 Codex Responses API
 - Prompt：`"从以下热榜中筛选出与「{兴趣}」真正相关的内容"`
 - LLM 返回结构化 JSON：`[{index, title, reason}]`
 - 回填完整条目信息（链接、热度值等）
@@ -85,9 +85,9 @@
 **耗时**：3-5 秒
 
 **API 配置**：
-- 模型：`deepseek-chat`
-- Temperature：0.3
-- Max tokens：2000
+- 模型：`gpt-5.6-terra`
+- Endpoint：`/v1/responses`
+- Max output tokens：2000
 
 ---
 
@@ -141,7 +141,7 @@
 **技术方法**：
 - 搜索 API 也失败时触发
 - API：`api.bilibili.com/x/web-interface/popular?ps=50`
-- 获取全站热门 TOP 50 → 发送给 Deepseek：`"请找出与「{兴趣}」最相关的视频"`
+- 获取全站热门 TOP 50 → 发送给 Codex：`"请找出与「{兴趣}」最相关的视频"`
 - LLM 返回相关条目索引 → 回填完整信息
 
 **耗时**：3-5 秒
@@ -151,7 +151,7 @@
 **技术方法**：
 - 构造搜索页 URL（如 `search.bilibili.com/all?keyword={兴趣}`）
 - `requests.get()` + BeautifulSoup 提取文本
-- Deepseek 从文本中提取结构化结果
+- Codex 从文本中提取结构化结果
 - **自动过滤无链接条目**（SPA 页面常见问题）
 
 **耗时**：5-10 秒
@@ -204,7 +204,7 @@
 
 #### 4-3 LLM 精选
 
-候选 TOP 20 → Deepseek：
+候选 TOP 20 → Codex：
 ```
 "请选出与「{原始关键词}」最相关的视频，返回 JSON [{index, title, reason}]"
 ```
@@ -247,7 +247,7 @@
 |----------|------|------|
 | `urllib.parse` | URL 域名提取 | Layer 0 |
 | DailyHotApi `:6688/bilibili` | 获取B站热榜 TOP 20 | Layer 1-2 |
-| Deepseek Chat API | 语义分析、内容筛选、相关性判断 | Layer 2-4 |
+| Codex Responses API (`gpt-5.6-terra`) | 语义分析、内容筛选、相关性判断 | Layer 2-4 |
 | B站 Ranking API `ranking/v2` | 分区排行（16个分区） | Layer 3-1 |
 | B站 Search API `search/type` | 关键词搜索 | Layer 3-2, 4 |
 | B站 Popular API `popular` | 全站热门 | Layer 3-3 |

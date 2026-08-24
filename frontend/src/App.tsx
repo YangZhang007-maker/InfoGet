@@ -5,24 +5,32 @@ import SearchBar from "./components/SearchBar";
 import Top10 from "./components/Top10";
 import CustomSearch from "./components/CustomSearch";
 import RecommendSource from "./components/RecommendSource";
+import AcademicInfo from "./components/AcademicInfo";
 import type { HotItem } from "./types";
 import { fetchHotList } from "./services/api";
 import { PLATFORM_NAME_MAP } from "./services/data";
 import "./App.css";
 
-type ViewMode = "hotlist" | "search" | "top10" | "custom" | "recommend";
+type ViewMode = "hotlist" | "search" | "top10" | "custom" | "academic" | "recommend";
+
+const VIEW_MODES: ViewMode[] = ["hotlist", "search", "top10", "custom", "academic", "recommend"];
+
+function initialViewMode(): ViewMode {
+  const requested = new URLSearchParams(window.location.search).get("view") as ViewMode | null;
+  return requested && VIEW_MODES.includes(requested) ? requested : "hotlist";
+}
 
 function App() {
   const [selectedPlatform, setSelectedPlatform] = useState("");
-  const [viewMode, setViewMode] = useState<ViewMode>("hotlist");
+  const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
   const [hotItems, setHotItems] = useState<HotItem[]>([]);
   const [platformName, setPlatformName] = useState("");
   const [updateTime, setUpdateTime] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const loadPlatform = useCallback(async (id: string) => {
+  const loadPlatform = useCallback(async (id: string, preserveView = false) => {
     setSelectedPlatform(id);
-    setViewMode("hotlist");
+    if (!preserveView) setViewMode("hotlist");
     setLoading(true);
     setHotItems([]);
     try {
@@ -37,7 +45,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    loadPlatform("weibo");
+    loadPlatform("weibo", true);
   }, [loadPlatform]);
 
   return (
@@ -70,6 +78,12 @@ function App() {
             onClick={() => setViewMode("custom")}
           >
             🎯 自定义源
+          </button>
+          <button
+            className={`nav-btn ${viewMode === "academic" ? "active" : ""}`}
+            onClick={() => setViewMode("academic")}
+          >
+            📚 学术追踪
           </button>
           <button
             className={`nav-btn ${viewMode === "recommend" ? "active" : ""}`}
@@ -124,6 +138,12 @@ function App() {
         {viewMode === "recommend" && (
           <main className="main-content full-width">
             <RecommendSource />
+          </main>
+        )}
+
+        {viewMode === "academic" && (
+          <main className="main-content full-width academic-width">
+            <AcademicInfo />
           </main>
         )}
       </div>
