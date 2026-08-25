@@ -33,6 +33,12 @@ except (ImportError, ValueError):
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from get_acdemic_info.router import router as academic_router
 
+# 自定义源爬虫模块
+try:
+    from .crawler.router import router as custom_crawler_router
+except (ImportError, ValueError):
+    from crawler.router import router as custom_crawler_router
+
 app = FastAPI(
     title="每日热榜增强API",
     description="自定义信息源搜索 + 智能热点提取 + 博主推荐 + 学术信息采集",
@@ -51,6 +57,7 @@ app.add_middleware(
 # 挂载推荐博主路由
 app.include_router(recommend_router)
 app.include_router(academic_router)
+app.include_router(custom_crawler_router)
 
 
 # ============================================

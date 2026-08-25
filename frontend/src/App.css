@@ -600,6 +600,17 @@ body {
 .custom-search {
   max-width: 900px;
   margin: 0 auto;
+  padding-bottom: 48px;
+}
+
+.cs-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+  border-bottom: 2px solid #167d68;
 }
 
 .custom-search h2 {
@@ -611,7 +622,61 @@ body {
 .custom-desc {
   color: var(--text-secondary);
   font-size: 14px;
-  margin-bottom: 24px;
+  margin-bottom: 0;
+}
+
+.cs-model {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border: 1px solid #b9d9d2;
+  border-radius: 4px;
+  background: #edf8f5;
+  color: #126453;
+  font: 11px ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.cs-mode-tabs,
+.cs-output-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.cs-mode-tabs button,
+.cs-output-tabs button {
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.cs-mode-tabs button:hover,
+.cs-output-tabs button:hover {
+  border-color: #167d68;
+  color: #126453;
+}
+
+.cs-mode-tabs button.active,
+.cs-output-tabs button.active {
+  border-color: #167d68;
+  background: #167d68;
+  color: #fff;
+}
+
+.cs-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 16px;
+  padding: 18px 0 4px;
+  border-top: 1px solid var(--border);
+}
+
+.cs-field-wide {
+  grid-column: 1 / -1;
 }
 
 .cs-input-section {
@@ -740,7 +805,7 @@ body {
   width: 100%;
   padding: 14px;
   border: none;
-  background: var(--accent);
+  background: #167d68;
   color: #fff;
   border-radius: var(--radius);
   font-size: 16px;
@@ -751,7 +816,7 @@ body {
 }
 
 .cs-search-btn:hover:not(:disabled) {
-  background: var(--accent-hover);
+  background: #126453;
 }
 
 .cs-search-btn:disabled {
@@ -767,6 +832,202 @@ body {
   color: #d32f2f;
   margin-bottom: 20px;
   font-size: 14px;
+}
+
+.cs-crawler-options {
+  display: grid;
+  grid-template-columns: 140px 160px minmax(220px, 1fr);
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.cs-crawler-options > label:not(.cs-toggle) {
+  display: grid;
+  gap: 6px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.cs-crawler-options input[type="number"] {
+  width: 100%;
+  height: 38px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: 1px solid #d8d8df;
+  border-radius: 4px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+}
+
+.cs-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.cs-toggle input {
+  position: absolute;
+  opacity: 0;
+}
+
+.cs-toggle span {
+  position: relative;
+  width: 34px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: #c9cbd2;
+  transition: background 0.2s;
+}
+
+.cs-toggle span::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  top: 2px;
+  left: 2px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s;
+}
+
+.cs-toggle input:checked + span {
+  background: #167d68;
+}
+
+.cs-toggle input:checked + span::after {
+  transform: translateX(16px);
+}
+
+.cs-pipeline {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  margin: 0 0 20px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.cs-pipeline > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px 6px;
+  border-right: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.cs-pipeline > div:last-child {
+  border-right: 0;
+}
+
+.cs-pipeline > div span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #c9cbd2;
+  border-radius: 50%;
+  font-size: 10px;
+}
+
+.cs-pipeline > div.done {
+  background: #edf8f5;
+  color: #126453;
+}
+
+.cs-pipeline > div.done span {
+  border-color: #167d68;
+  background: #167d68;
+  color: #fff;
+}
+
+.cs-pipeline > div.active {
+  background: #fff8e8;
+  color: #8a5b00;
+}
+
+.cs-warnings {
+  margin-bottom: 18px;
+  padding: 10px 14px;
+  border-left: 3px solid #d59019;
+  background: #fff8e8;
+  color: #6f4b0b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.cs-warnings p {
+  margin: 0 0 4px;
+}
+
+.cs-warnings p:last-child {
+  margin-bottom: 0;
+}
+
+.cs-crawler-output {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.cs-run-summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: #f7f8f8;
+  font-size: 11px;
+}
+
+.cs-run-summary strong {
+  grid-row: span 2;
+  align-self: center;
+  color: #126453;
+  font-size: 14px;
+}
+
+.cs-run-summary span {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cs-output-tabs {
+  padding: 12px 16px 0;
+  margin-bottom: 12px;
+}
+
+.cs-code-view {
+  max-height: 520px;
+  margin: 0;
+  padding: 16px;
+  overflow: auto;
+  border-top: 1px solid var(--border);
+  background: #202326;
+  color: #e8ebed;
+  font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre;
+}
+
+.cs-crawler-items {
+  border-top: 1px solid var(--border);
 }
 
 .cs-no-results {
@@ -1729,5 +1990,50 @@ body {
   }
   .rec-input-section {
     flex-direction: column;
+  }
+
+  .cs-heading {
+    gap: 10px;
+  }
+
+  .cs-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cs-crawler-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cs-toggle {
+    grid-column: 1 / -1;
+  }
+
+  .cs-pipeline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cs-pipeline > div {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cs-pipeline > div:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .cs-pipeline > div:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+
+  .cs-run-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .cs-run-summary strong {
+    grid-row: auto;
+    margin-bottom: 4px;
+  }
+
+  .cs-output-tabs {
+    overflow-x: auto;
   }
 }
