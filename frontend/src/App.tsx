@@ -6,14 +6,15 @@ import Top10 from "./components/Top10";
 import CustomSearch from "./components/CustomSearch";
 import RecommendSource from "./components/RecommendSource";
 import AcademicInfo from "./components/AcademicInfo";
+import CombinedDiscovery from "./components/CombinedDiscovery";
 import type { HotItem } from "./types";
 import { fetchHotList } from "./services/api";
 import { PLATFORM_NAME_MAP } from "./services/data";
 import "./App.css";
 
-type ViewMode = "hotlist" | "search" | "top10" | "custom" | "academic" | "recommend";
+type ViewMode = "hotlist" | "search" | "top10" | "custom" | "academic" | "recommend" | "combined";
 
-const VIEW_MODES: ViewMode[] = ["hotlist", "search", "top10", "custom", "academic", "recommend"];
+const VIEW_MODES: ViewMode[] = ["hotlist", "search", "top10", "custom", "academic", "recommend", "combined"];
 
 function initialViewMode(): ViewMode {
   const requested = new URLSearchParams(window.location.search).get("view") as ViewMode | null;
@@ -91,6 +92,12 @@ function App() {
           >
             🤝 推荐博主
           </button>
+          <button
+            className={`nav-btn ${viewMode === "combined" ? "active" : ""}`}
+            onClick={() => setViewMode("combined")}
+          >
+            🧭 智能发现
+          </button>
         </nav>
         <div className="header-status">
           <span className="api-badge">API: localhost:6688</span>
@@ -144,6 +151,12 @@ function App() {
         {viewMode === "academic" && (
           <main className="main-content full-width academic-width">
             <AcademicInfo />
+          </main>
+        )}
+
+        {viewMode === "combined" && (
+          <main className="main-content full-width">
+            <CombinedDiscovery />
           </main>
         )}
       </div>
