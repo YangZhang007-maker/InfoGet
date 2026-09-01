@@ -45,6 +45,12 @@ try:
 except (ImportError, ValueError):
     from combine_up_and_source.router import router as combined_discovery_router
 
+# 每日资讯模块
+try:
+    from ..daily_info.router import router as daily_info_router
+except (ImportError, ValueError):
+    from daily_info.router import router as daily_info_router
+
 app = FastAPI(
     title="每日热榜增强API",
     description="自定义信息源搜索 + 智能热点提取 + 博主推荐 + 学术信息采集",
@@ -65,6 +71,7 @@ app.include_router(recommend_router)
 app.include_router(academic_router)
 app.include_router(custom_crawler_router)
 app.include_router(combined_discovery_router)
+app.include_router(daily_info_router)
 
 
 # ============================================

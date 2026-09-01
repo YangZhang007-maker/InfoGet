@@ -7,14 +7,15 @@ import CustomSearch from "./components/CustomSearch";
 import RecommendSource from "./components/RecommendSource";
 import AcademicInfo from "./components/AcademicInfo";
 import CombinedDiscovery from "./components/CombinedDiscovery";
+import DailyInfo from "../../daily_info/frontend/DailyInfo";
 import type { HotItem } from "./types";
 import { fetchHotList } from "./services/api";
 import { PLATFORM_NAME_MAP } from "./services/data";
 import "./App.css";
 
-type ViewMode = "hotlist" | "search" | "top10" | "custom" | "academic" | "recommend" | "combined";
+type ViewMode = "daily" | "hotlist" | "search" | "top10" | "custom" | "academic" | "recommend" | "combined";
 
-const VIEW_MODES: ViewMode[] = ["hotlist", "search", "top10", "custom", "academic", "recommend", "combined"];
+const VIEW_MODES: ViewMode[] = ["daily", "hotlist", "search", "top10", "custom", "academic", "recommend", "combined"];
 
 function initialViewMode(): ViewMode {
   const requested = new URLSearchParams(window.location.search).get("view") as ViewMode | null;
@@ -56,6 +57,12 @@ function App() {
           🔥 每日热榜
         </h1>
         <nav className="app-nav">
+          <button
+            className={`nav-btn ${viewMode === "daily" ? "active" : ""}`}
+            onClick={() => setViewMode("daily")}
+          >
+            每日资讯
+          </button>
           <button
             className={`nav-btn ${viewMode === "hotlist" ? "active" : ""}`}
             onClick={() => setViewMode("hotlist")}
@@ -110,6 +117,8 @@ function App() {
       </header>
 
       <div className="app-body">
+        {viewMode === "daily" && <DailyInfo />}
+
         {viewMode === "hotlist" && (
           <>
             <Sidebar selectedPlatform={selectedPlatform} onSelect={loadPlatform} />
