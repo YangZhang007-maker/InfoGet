@@ -33,6 +33,7 @@ interface DiscoveryResult {
 }
 
 type ReportIntent = "learning" | "industry" | "decision";
+type ReportDetail = "brief" | "detailed";
 type ReportPreset = "compact" | "standard" | "detailed" | "custom";
 type ReportPhase = "idle" | "cleaning" | "semantic" | "organizing";
 
@@ -58,15 +59,19 @@ interface ReportItem {
   quality_score: number; heat_score: number;
 }
 interface ReportStage { name: string; items: ReportItem[]; }
+interface ReportNarrativeSpan { text: string; item_ids: string[]; matched_keywords: string[]; }
+interface ReportNarrativeParagraph { spans: ReportNarrativeSpan[]; }
+interface ReportNarrative { detail: ReportDetail; paragraphs: ReportNarrativeParagraph[]; }
 interface DiscoveryReport {
   schema_version: number; title: string; query: string; keywords: string[];
   intent: ReportIntent; structure_name: string; stage_order: string[];
   overview: ReportOverview;
   recommended_sources: { bloggers: ReportSourceAnnotation[]; platforms: ReportSourceAnnotation[] };
+  narrative: ReportNarrative;
   stages: ReportStage[]; warnings: string[];
 }
 interface ReportResponse {
-  report_id: string; discovery_id: string; requested_amount: number; returned_amount: number;
+  report_id: string; discovery_id: string; requested_amount: number; returned_amount: number; detail: ReportDetail;
   generation_mode: "codex" | "fallback"; degraded_reason: string | null;
   report: DiscoveryReport; markdown: string;
 }
@@ -100,6 +105,7 @@ export default function CombinedDiscovery() {
   const [result, setResult] = useState<DiscoveryResult | null>(null);
   const [activeResultView, setActiveResultView] = useState<"discovery" | "report">("discovery");
   const [reportPreset, setReportPreset] = useState<ReportPreset>("standard");
+  const [reportDetail, setReportDetail] = useState<ReportDetail>("brief");
   const [customAmount, setCustomAmount] = useState(10);
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState("");
@@ -170,7 +176,7 @@ export default function CombinedDiscovery() {
       const response = await fetch(`${API_BACKEND}/api/combined-discovery/reports`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ discovery_id: result.discovery_id, amount }),
+        body: JSON.stringify({ discovery_id: result.discovery_id, amount, detail: reportDetail }),
       });
       if (!response.ok) throw new Error(await getError(response));
       const report = (await response.json()) as ReportResponse;
@@ -222,9 +228,11 @@ export default function CombinedDiscovery() {
         <ReportToolbar
           preset={reportPreset}
           customAmount={customAmount}
+          detail={reportDetail}
           loading={reportLoading}
           onPreset={setReportPreset}
           onCustomAmount={setCustomAmount}
+          onDetail={setReportDetail}
           onGenerate={generateReport}
         />
         {reportLoading && <ReportProgress phase={reportPhase} />}
@@ -253,9 +261,10 @@ function DiscoveryProgress() {
   </div>;
 }
 
-function ReportToolbar({ preset, customAmount, loading, onPreset, onCustomAmount, onGenerate }: {
-  preset: ReportPreset; customAmount: number; loading: boolean;
+function ReportToolbar({ preset, customAmount, detail, loading, onPreset, onCustomAmount, onDetail, onGenerate }: {
+  preset: ReportPreset; customAmount: number; detail: ReportDetail; loading: boolean;
   onPreset: (preset: ReportPreset) => void; onCustomAmount: (amount: number) => void;
+  onDetail: (detail: ReportDetail) => void;
   onGenerate: () => void;
 }) {
   const options: Array<{ id: ReportPreset; label: string }> = [
@@ -280,6 +289,13 @@ function ReportToolbar({ preset, customAmount, loading, onPreset, onCustomAmount
         onChange={(event) => onCustomAmount(Number(event.target.value))}
         onBlur={() => onCustomAmount(clampAmount(customAmount))} disabled={loading} />
     </label>}
+    <div className="combined-report-detail" role="group" aria-label="总结程度">
+      <span>总结程度</span>
+      <button type="button" className={detail === "brief" ? "active" : ""}
+        onClick={() => onDetail("brief")} disabled={loading}>简要</button>
+      <button type="button" className={detail === "detailed" ? "active" : ""}
+        onClick={() => onDetail("detailed")} disabled={loading}>详细</button>
+    </div>
     <button type="button" className="combined-report-generate" onClick={onGenerate} disabled={loading}>
       {loading ? "生成中..." : "生成展示报告"}
     </button>
@@ -377,6 +393,7 @@ function ReportDashboard({ response }: { response: ReportResponse }) {
   const sourceCount = new Set(
     response.report.stages.flatMap((stage) => stage.items.map((item) => item.source_key)),
   ).size;
+  const itemMap = new Map(response.report.stages.flatMap((stage) => stage.items).map((item) => [item.item_id, item]));
   return <article className="combined-report-dashboard">
     <header className="combined-report-header">
       <div>
@@ -409,8 +426,23 @@ function ReportDashboard({ response }: { response: ReportResponse }) {
       <div><strong>{response.report.stages.length}</strong><span>覆盖阶段</span></div>
     </div>
 
+    <section className="combined-report-narrative">
+      <div className="combined-report-section-title"><span>01</span><h3>整合摘要</h3><small>{response.detail === "detailed" ? "详细总结" : "简要总结"}</small></div>
+      {response.report.narrative.paragraphs.length === 0
+        ? <p className="combined-report-empty">没有可整合的内容。</p>
+        : response.report.narrative.paragraphs.map((paragraph, index) => <p key={`narrative-${index}`}>
+          {paragraph.spans.map((span, spanIndex) => {
+            const target = span.item_ids.map((id) => itemMap.get(id)).find(Boolean);
+            return target
+              ? <a key={`${target.item_id}-${spanIndex}`} href={target.url} target="_blank" rel="noopener noreferrer" title={`查看来源：${target.source_name}`}>{span.text}</a>
+              : <span key={spanIndex}>{span.text}</span>;
+          })}
+        </p>)}
+      <small className="combined-report-narrative-note">带下划线的句段对应具体搜索结果，点击可查看原文。</small>
+    </section>
+
     <section className="combined-report-overview">
-      <div className="combined-report-section-title"><span>01</span><h3>报告总览</h3></div>
+      <div className="combined-report-section-title"><span>02</span><h3>报告总览</h3></div>
       <p className="combined-report-topic">{response.report.overview.topic_summary || "暂无主题概览"}</p>
       <div className="combined-report-overview-grid">
         <div><strong>覆盖方向</strong><p>{response.report.overview.covered_directions.join("、") || "暂无"}</p></div>
@@ -422,7 +454,7 @@ function ReportDashboard({ response }: { response: ReportResponse }) {
     <ReportSourceOverview report={response.report} />
 
     <section className="combined-report-path">
-      <div className="combined-report-section-title"><span>03</span><h3>精选内容路径</h3></div>
+      <div className="combined-report-section-title"><span>03</span><h3>引用结果索引</h3></div>
       {response.report.stages.length === 0 && <div className="combined-report-empty">没有达到展示条件的内容。</div>}
       {response.report.stages.map((stage, index) => <ReportStageSection key={stage.name} stage={stage} index={index + 1} />)}
     </section>
@@ -432,7 +464,7 @@ function ReportDashboard({ response }: { response: ReportResponse }) {
 function ReportSourceOverview({ report }: { report: DiscoveryReport }) {
   const sources = [...report.recommended_sources.bloggers, ...report.recommended_sources.platforms];
   return <section className="combined-report-sources">
-    <div className="combined-report-section-title"><span>02</span><h3>推荐来源</h3></div>
+    <div className="combined-report-section-title"><span>04</span><h3>推荐来源</h3></div>
     {sources.length === 0
       ? <p className="combined-report-empty">本次没有可展示的推荐博主或平台。</p>
       : <div className="combined-report-source-grid">{sources.map((source) => <a

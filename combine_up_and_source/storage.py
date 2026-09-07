@@ -85,9 +85,15 @@ class DiscoveryStorage:
             raise SnapshotCorruptError("智能发现快照创建时间无效")
         return payload
 
-    def report_id(self, discovery_id: str, amount: int, schema_version: int) -> str:
+    def report_id(
+        self,
+        discovery_id: str,
+        amount: int,
+        schema_version: int,
+        variant: str = "default",
+    ) -> str:
         safe_id = self._safe_discovery_id(discovery_id)
-        material = f"{safe_id}:{int(amount)}:{int(schema_version)}".encode("utf-8")
+        material = f"{safe_id}:{int(amount)}:{int(schema_version)}:{variant}".encode("utf-8")
         return hashlib.sha256(material).hexdigest()[:32]
 
     def save_report(

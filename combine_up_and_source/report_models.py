@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 ReportIntent = Literal["learning", "industry", "decision"]
 GenerationMode = Literal["codex", "fallback"]
+ReportDetail = Literal["brief", "detailed"]
 LabelText = Annotated[
     str,
     StringConstraints(
@@ -53,6 +54,7 @@ class StrictModel(BaseModel):
 class ReportRequest(StrictModel):
     discovery_id: UUID
     amount: int = Field(default=10, ge=1, le=30)
+    detail: ReportDetail = "brief"
 
 
 class CandidateItem(StrictModel):
@@ -140,6 +142,21 @@ class ReportStage(StrictModel):
     items: list[ReportItem] = Field(default_factory=list)
 
 
+class ReportNarrativeSpan(StrictModel):
+    text: str = Field(min_length=1, max_length=500)
+    item_ids: list[str] = Field(default_factory=list, max_length=8)
+    matched_keywords: list[str] = Field(default_factory=list, max_length=10)
+
+
+class ReportNarrativeParagraph(StrictModel):
+    spans: list[ReportNarrativeSpan] = Field(min_length=1, max_length=40)
+
+
+class ReportNarrative(StrictModel):
+    detail: ReportDetail
+    paragraphs: list[ReportNarrativeParagraph] = Field(default_factory=list, max_length=12)
+
+
 class DiscoveryReport(StrictModel):
     schema_version: int = 1
     title: str
@@ -151,6 +168,9 @@ class DiscoveryReport(StrictModel):
     overview: ReportOverview
     recommended_sources: RecommendedSources
     stages: list[ReportStage]
+    narrative: ReportNarrative = Field(
+        default_factory=lambda: ReportNarrative(detail="brief", paragraphs=[])
+    )
     warnings: list[str] = Field(default_factory=list)
 
 
@@ -159,6 +179,7 @@ class ReportResponse(StrictModel):
     discovery_id: str
     requested_amount: int = Field(ge=1, le=30)
     returned_amount: int = Field(ge=0, le=30)
+    detail: ReportDetail = "brief"
     generation_mode: GenerationMode
     degraded_reason: str | None = None
     report: DiscoveryReport

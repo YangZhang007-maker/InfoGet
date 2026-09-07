@@ -50,8 +50,13 @@ async def run_combined_discovery(payload: CombinedDiscoveryRequest):
 @router.post("/reports", response_model=ReportResponse)
 async def generate_discovery_report(payload: ReportRequest):
     try:
-        return await DiscoveryReportService().generate(
-            str(payload.discovery_id), payload.amount
+        service = DiscoveryReportService()
+        if payload.detail == "brief":
+            # Keep the default call compatible with integrations that wrap the
+            # original two-argument service method.
+            return await service.generate(str(payload.discovery_id), payload.amount)
+        return await service.generate(
+            str(payload.discovery_id), payload.amount, payload.detail
         )
     except SnapshotNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc

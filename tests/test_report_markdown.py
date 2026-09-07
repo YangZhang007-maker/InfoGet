@@ -48,6 +48,7 @@ def test_markdown_follows_stage_order_and_contains_only_selected_items():
     assert markdown.index("## 基础认知") < markdown.index("## 实战内容")
     assert "基础内容" in markdown
     assert "实践内容" in markdown
+    assert "## 整合摘要" in markdown
     assert "未选择内容" not in markdown
 
 

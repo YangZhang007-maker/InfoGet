@@ -105,11 +105,16 @@ def build_fallback_draft(
     )
 
 
-def select_report_items(items: list[ReportItem], amount: int) -> list[ReportItem]:
-    ordered = sorted(
-        (item for item in items if item.relevance_score >= RELEVANCE_THRESHOLD),
-        key=_item_sort_key,
+def select_report_items(
+    items: list[ReportItem],
+    amount: int,
+    *,
+    include_low_relevance: bool = False,
+) -> list[ReportItem]:
+    eligible = items if include_low_relevance else (
+        item for item in items if item.relevance_score >= RELEVANCE_THRESHOLD
     )
+    ordered = sorted(eligible, key=_item_sort_key)
     target_count = min(max(int(amount), 0), len(ordered))
     if target_count == 0:
         return []

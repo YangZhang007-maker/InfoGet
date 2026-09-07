@@ -84,7 +84,56 @@ def test_generates_report_and_backfills_trusted_content(tmp_path):
     assert response.returned_amount == 1
     assert response.report.stages[0].name == "基础认知"
     assert response.report.stages[0].items[0].url == original_url
+    assert response.detail == "brief"
+    assert response.report.narrative.paragraphs[0].spans[-2].item_ids == [
+        response.report.stages[0].items[0].item_id
+    ]
+    assert original_url in response.markdown
     assert response.markdown.startswith("# 机器学习智能发现报告")
+
+
+def test_detailed_report_includes_relation_text_and_uses_distinct_cache_key(tmp_path):
+    storage = DiscoveryStorage(tmp_path)
+    discovery_id = storage.save_discovery(discovery_result([{
+        "title": "机器学习实战",
+        "url": "https://example.com/practice",
+        "summary": "机器学习项目实践",
+        "relevance": 100,
+    }]))
+    service = DiscoveryReportService(storage=storage, analyzer=FakeAnalyzer())
+
+    brief = asyncio.run(service.generate(discovery_id, amount=5, detail="brief"))
+    detailed = asyncio.run(service.generate(discovery_id, amount=5, detail="detailed"))
+
+    assert brief.report_id != detailed.report_id
+    assert detailed.detail == "detailed"
+    narrative_text = "".join(
+        span.text
+        for paragraph in detailed.report.narrative.paragraphs
+        for span in paragraph.spans
+    )
+    assert "解释机器学习基础概念" in narrative_text
+    assert "一份入门介绍《机器学习实战》" in narrative_text
+
+
+def test_narrative_recomposition_invalidates_previous_report_schema(tmp_path):
+    storage = DiscoveryStorage(tmp_path)
+    discovery_id = storage.save_discovery(discovery_result([{
+        "title": "机器学习基础",
+        "url": "https://example.com/basic",
+        "summary": "机器学习基础",
+        "relevance": 100,
+    }]))
+    old_id = storage.report_id(discovery_id, amount=5, schema_version=2, variant="brief")
+    storage.save_report(discovery_id, old_id, {"report_id": old_id}, "旧报告")
+
+    response = asyncio.run(
+        DiscoveryReportService(storage=storage, analyzer=FakeAnalyzer()).generate(
+            discovery_id, amount=5, detail="brief"
+        )
+    )
+
+    assert response.report_id != old_id
 
 
 def test_reuses_complete_report_for_same_snapshot_and_amount(tmp_path):
@@ -180,8 +229,8 @@ def test_overview_is_reconciled_with_final_selected_items(tmp_path):
 
     response = asyncio.run(service.generate(discovery_id, amount=5))
 
-    assert response.returned_amount == 0
-    assert response.report.overview.covered_directions == []
-    assert response.report.overview.reading_order == ""
-    assert "0 条" in response.report.overview.topic_summary
-    assert response.report.overview.missing_directions == response.report.stage_order
+    assert response.returned_amount == 1
+    assert response.report.overview.covered_directions == ["入门教程"]
+    assert response.report.overview.reading_order == "基础认知"
+    assert "1 条" in response.report.overview.topic_summary
+    assert any("部分内容相关度低于 55" in warning for warning in response.report.warnings)

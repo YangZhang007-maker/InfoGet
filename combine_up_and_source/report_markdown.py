@@ -26,6 +26,26 @@ def render_report_markdown(report: DiscoveryReport) -> str:
     if report.overview.missing_directions:
         lines.append(f"- 尚缺方向：{_escape('、'.join(report.overview.missing_directions))}")
 
+    item_urls = {
+        item.item_id: item.url
+        for stage in report.stages
+        for item in stage.items
+    }
+    lines.extend(["", "## 整合摘要", ""])
+    if not report.narrative.paragraphs:
+        lines.append("暂无可整合的内容。")
+    else:
+        for paragraph in report.narrative.paragraphs:
+            parts = []
+            for span in paragraph.spans:
+                text = _escape(span.text)
+                item_id = next((value for value in span.item_ids if value in item_urls), None)
+                if item_id:
+                    parts.append(f"[{text}](<{_safe_url(item_urls[item_id])}>)")
+                else:
+                    parts.append(text)
+            lines.append("".join(parts))
+
     sources = report.recommended_sources
     if sources.bloggers:
         lines.extend(["", "## 推荐博主", ""])

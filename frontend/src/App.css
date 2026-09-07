@@ -2332,6 +2332,36 @@ body {
   text-align: center;
 }
 
+.combined-report-detail {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+.combined-report-detail > span {
+  margin-right: 3px;
+}
+
+.combined-report-detail button {
+  min-height: 30px;
+  padding: 0 9px;
+  border: 1px solid #c8cdd2;
+  border-radius: 3px;
+  background: #fff;
+  color: #5d6870;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.combined-report-detail button.active {
+  border-color: #345e8a;
+  background: #edf4fa;
+  color: #284f76;
+}
+
 .combined-report-generate {
   min-width: 132px;
   min-height: 34px;
@@ -2557,6 +2587,51 @@ body {
 .combined-report-sources,
 .combined-report-path {
   margin-top: 28px;
+}
+
+.combined-report-narrative {
+  margin-top: 28px;
+}
+
+.combined-report-narrative .combined-report-section-title small {
+  margin-left: auto;
+  color: #8a949c;
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.combined-report-narrative > p:not(.combined-report-empty) {
+  margin: 0;
+  padding: 14px 16px;
+  border-left: 3px solid #345e8a;
+  background: #f6f8fa;
+  color: #29343d;
+  font-size: 13px;
+  line-height: 1.9;
+}
+
+.combined-report-narrative > p + p:not(.combined-report-narrative-note) {
+  border-top: 1px solid #fff;
+}
+
+.combined-report-narrative > p a {
+  color: #1f557e;
+  text-decoration: underline;
+  text-decoration-color: #799bb5;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.combined-report-narrative > p a:hover {
+  color: #174363;
+  text-decoration-color: #174363;
+}
+
+.combined-report-narrative-note {
+  display: block;
+  margin-top: 8px;
+  color: #8a949c;
+  font-size: 10px;
 }
 
 .combined-report-section-title {

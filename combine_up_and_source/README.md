@@ -25,6 +25,10 @@
 
 ```http
 POST /api/combined-discovery/reports
+
+请求体支持 `{"discovery_id":"...", "amount":10, "detail":"brief"}`，其中
+`detail` 可选 `brief`（简要）或 `detailed`（详细）。报告会生成“整合摘要”：
+摘要中的带下划线句段对应精选结果，点击可打开原文；Markdown 和打印/PDF 也会保留链接。
 Content-Type: application/json
 ```
 
@@ -43,7 +47,7 @@ Content-Type: application/json
 - 行业型：背景概览 → 当前热点 → 典型案例 → 趋势判断
 - 决策型：基础知识 → 可选方案 → 实践建议 → 风险提醒
 
-Codex 负责语义相关度、关系说明和标签，但只能引用后端提供的内容 ID，标题和链接由后端从快照回填。Codex 调用失败或返回格式无效时，接口仍会返回 `generation_mode: "fallback"` 的基础排序报告。
+Codex 负责语义相关度、关系说明和标签，但只能引用后端提供的内容 ID，标题和链接由后端从快照回填。Codex 调用失败或返回格式无效时，接口仍会返回 `generation_mode: "fallback"` 的基础排序报告；fallback 仍会按用户选择的数量整合有效链接，相关度只用于排序并以提示标注低相关内容。
 
 ## 数据与导出
 
